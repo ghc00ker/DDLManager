@@ -1,2 +1,25 @@
+# Python 编译文件
+*.pyc
+__pycache__/
+*.egg-info/
+dist/
+build/
+
+# 虚拟环境
+.venv/
+venv/
+
+# 敏感信息
+.env
 apikey.txt
-main.py
+secrets/
+test_caldav.py
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# 保留原始 main.py 作为参考（已迁移到模块化结构）
+# main.py
