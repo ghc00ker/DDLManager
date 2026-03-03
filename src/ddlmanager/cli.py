@@ -5,7 +5,75 @@ from .config import Config
 from .parsers import QQParser
 from .services import AIClient, CalendarService, DDLExtractor
 from .models import Event
+from typing import List
+import threading
+import time
+import itertools
 
+def info(msg: str):
+    """系统提示"""
+    return (f"> {msg}")
+
+class Spinner:
+    """CLI 等待动画（上下文管理器）"""
+    """LLM Generate"""
+    def __init__(self, message: str = "处理中"):
+        self.message = message
+        self._stop = threading.Event()
+        self._thread = None
+
+    def _spin(self):
+        chars = itertools.cycle('⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏')
+        start = time.time()
+        while not self._stop.is_set():
+            elapsed = time.time() - start
+            print(f"\r{next(chars)} {self.message}... ({elapsed:.0f}s)", end="", flush=True)
+            self._stop.wait(0.1)
+        elapsed = time.time() - start
+        print(f"\r✓ {self.message} 完成 ({elapsed:.1f}s)   ")
+
+    def __enter__(self):
+        self._thread = threading.Thread(target=self._spin, daemon=True)
+        self._thread.start()
+        return self
+
+    def __exit__(self, *args):
+        self._stop.set()
+        self._thread.join()
+
+def confirm(prompt: str = "是否继续？(y/n): ") -> bool:
+    """通用确认，只接受 y/n"""
+    while True:
+        choice = input(prompt).strip().lower()
+        if choice in ('y', 'n'):
+            return choice == 'y'
+        print("> 请输入 y 或 n")
+
+def review_events(events: List[Event]) -> List[Event]:
+    """逐个审查事件，返回通过审查的事件列表"""
+    if not events:
+        return []
+
+    approved = []
+    print(f"\n{'='*50}")
+    print(f"共 {len(events)} 个事件待审查")
+    print(f"{'='*50}")
+
+    for i, event in enumerate(events, 1):
+        print(f"\n[{i}/{len(events)}]")
+        print(f"  标题: {event.summary}")
+        print(f"  开始: {event.start_datetime:%Y-%m-%d %H:%M}")
+        print(f"  结束: {event.end_datetime:%Y-%m-%d %H:%M}")
+        print(f"  描述: {event.description}")
+
+        if confirm("  是否保留该事件？(y/n): "):
+            approved.append(event)
+            print("  → 已保留")
+        else:
+            print("  → 已跳过")
+
+    print(f"\n审查完毕：{len(approved)}/{len(events)} 个事件通过")
+    return approved
 
 def main():
     """主流程：读取聊天记录 -> AI 分析 -> 保存到日历
@@ -42,8 +110,15 @@ def main():
     if not messages:
         print('没有找到有效消息')
         sys.exit(0)
+        
     for message in messages:
-        print(message.format_message_for_prompt())
+        print(message.format_message_for_prompt() + "\n")
+    
+    #第一处人工审查 
+    if not confirm(f"\n以上为 {len(messages)} 条消息，是否发送给 AI 分析？(y/n): "):
+        print("已取消")
+        sys.exit(0)
+        
     # 4. AI 提取 DDL
     ai_client = AIClient(
         api_key=Config.DEEPSEEK_API_KEY,
@@ -52,7 +127,8 @@ def main():
     extractor = DDLExtractor(ai_client)
     
     try:
-        events = extractor.extract(messages, max_messages=Config.MAX_MESSAGES)
+        with Spinner("LLM分析中"):
+            events = extractor.extract(messages, max_messages=Config.MAX_MESSAGES)
     except Exception as e:
         print(f'AI 分析失败: {e}')
         sys.exit(1)
@@ -62,7 +138,20 @@ def main():
         sys.exit(0)
         
     for event in events:
+        print(event.print_Event() + "/n")
+        
+    # 第二个人工审查
+    events = review_events(events)
+    
+    print("以下为通过人工审查的Event")
+    
+    for event in events:
         print(event.print_Event())
+        
+    # 第三个人工审查
+    if not confirm(f"\n以上为 {len(events)} 个Event，是否与日历同步？(y/n): "):
+        print("已取消")
+        sys.exit(0)
         
     # 5. 保存到日历
     calendar = CalendarService(

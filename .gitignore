@@ -16,6 +16,10 @@ secrets/
 test_caldav.py
 data/
 test_caldav.py
+
+# 测试功能文件夹
+test/
+
 # IDE
 .vscode/
 .idea/

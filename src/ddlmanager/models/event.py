@@ -25,14 +25,10 @@ class Event:
     
     def print_Event(self) -> 'str':
         line:str = ""
-        line += "Event: "
-        line += self.summary
-        line += " start: "
-        line += self.start_datetime.strftime("%Y-%m-%d %H:%M:%S")
-        line += " end: "
-        line += self.end_datetime.strftime("%Y-%m-%d %H:%M:%S")
-        line += " description: "
-        line += self.description
+        line = line + "Event: " + self.summary + "\n"
+        line = line + "  Start: " + self.start_datetime.strftime("%Y-%m-%d %H:%M:%S") + "\n"
+        line = line + "  End:   " + self.end_datetime.strftime("%Y-%m-%d %H:%M:%S") + "\n"
+        line = line + "  Description: " + self.description + "\n"
         return line
     
     @classmethod
