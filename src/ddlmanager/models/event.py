@@ -23,6 +23,18 @@ class Event:
             'uid': self.uid
         }
     
+    def print_Event(self) -> 'str':
+        line:str = ""
+        line += "Event: "
+        line += self.summary
+        line += " start: "
+        line += self.start_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        line += " end: "
+        line += self.end_datetime.strftime("%Y-%m-%d %H:%M:%S")
+        line += " description: "
+        line += self.description
+        return line
+    
     @classmethod
     def from_ai_response(cls, item: dict) -> 'Event':
         """从 AI 返回的 JSON 格式创建事件对象"""

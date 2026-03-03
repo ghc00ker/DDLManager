@@ -1,4 +1,5 @@
 """QQ 聊天记录解析器"""
+from datetime import datetime
 import json
 from typing import List
 from .base import MessageParser
@@ -14,26 +15,16 @@ class QQParser(MessageParser):
         Args:
             source: 文件路径（str）或已加载的字典（dict）
         """
-        if isinstance(source, str):
-            with open(source, 'r', encoding='utf-8') as f:
-                data = json.load(f)
-        elif isinstance(source, dict):
-            data = source
-        else:
-            raise ValueError(f"不支持的 source 类型: {type(source)}")
         
-        raw_messages = data.get('messages', [])
+        with open(source, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        
+        raw_messages = data.get('messages', []) # 如果messages不存在返回空
         messages = []
         
         for raw_msg in raw_messages:
             try:
-                content = raw_msg.get('content', {})
-                text = self._extract_text_from_content(content)
-                if not text:
-                    continue
-                
-                msg = Message.from_qq_export(raw_msg)
-                msg.text = text
+                msg = self.from_qq_export(raw_msg)
                 messages.append(msg)
             except Exception as e:
                 print(f"警告：跳过无效消息 {raw_msg.get('id')}: {e}")
@@ -41,7 +32,8 @@ class QQParser(MessageParser):
         
         return messages
     
-    def _extract_text_from_content(self, content: dict) -> str:
+    @classmethod
+    def extract_text_from_content(cls, content: dict) -> str:
         """从 QQ content 结构中提取纯文本
         
         为什么要单独提取？
@@ -72,3 +64,19 @@ class QQParser(MessageParser):
                 parts.append('[图片]')
         
         return ''.join(parts).strip()
+    
+    @classmethod
+    def from_qq_export(cls, raw_message: dict) -> 'Message':
+        """从 QQ 导出的 JSON 格式创建消息对象"""
+        mid = raw_message.get('id', '')
+        ts = datetime.fromtimestamp(raw_message.get('timestamp') / 1000)
+        sender = raw_message.get('sender') or {}
+        sender_name = sender.get('name') or sender.get('uid') or ''
+        sender_uid = sender.get('uid')
+        content = raw_message.get('content') or {}
+        # text = str(content.get('text', ''))
+        # text字段在
+        text = QQParser.extract_text_from_content(content)
+        
+        return Message(mid, sender_name, sender_uid, text, ts)
+    

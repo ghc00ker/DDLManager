@@ -24,13 +24,11 @@ def main():
         sys.exit(1)
     
     # 2. 读取输入文件
-    input_path = sys.argv[1] if len(sys.argv) > 1 else 'data/group_792340423_20260223_230254.json'
+    input_path = sys.argv[1] if len(sys.argv) > 1 else Config.DATA_PATH
     
     if not Path(input_path).exists():
         print(f'错误：文件不存在 {input_path}')
         sys.exit(1)
-    
-    print(f"正在读取: {input_path}")
     
     # 3. 解析消息
     parser = QQParser()
@@ -44,7 +42,8 @@ def main():
     if not messages:
         print('没有找到有效消息')
         sys.exit(0)
-    
+    for message in messages:
+        print(message.format_message_for_prompt())
     # 4. AI 提取 DDL
     ai_client = AIClient(
         api_key=Config.DEEPSEEK_API_KEY,
@@ -61,7 +60,10 @@ def main():
     if not events:
         print('未提取到任何事件')
         sys.exit(0)
-    
+        
+    for event in events:
+        print(event.print_Event())
+        
     # 5. 保存到日历
     calendar = CalendarService(
         url=Config.CALDAV_URL,

@@ -13,27 +13,13 @@ class Message:
     text: str
     timestamp: datetime
     
-    @classmethod
-    def from_qq_export(cls, raw_message: dict) -> 'Message':
-        """从 QQ 导出的 JSON 格式创建消息对象"""
-        mid = raw_message.get('id', '')
-        ts = raw_message.get('time') or raw_message.get('timestamp')
-        sender = raw_message.get('sender') or {}
-        sender_name = sender.get('name') or sender.get('uid') or ''
-        sender_uid = sender.get('uid')
-        content = raw_message.get('content') or {}
-        
-        text = str(content.get('text', ''))
-        
+    def format_message_for_prompt(self) -> str:
+        """格式化一条消息为 AI 可读的文本"""
+        line: str = ""
         try:
-            dt = datetime.fromtimestamp(int(ts)) if ts else datetime.now()
+            ts = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            line = (f"[{ts}] {self.sender_name}: {self.text}")
         except:
-            dt = datetime.now()
-        
-        return cls(
-            id=str(mid),
-            sender_name=sender_name,
-            sender_uid=sender_uid,
-            text=text,
-            timestamp=dt
-        )
+            print("格式化消息为 AI 可读的文本时出错")
+            
+        return line

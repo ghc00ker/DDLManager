@@ -17,12 +17,10 @@ class CalendarService:
     """
     
     def __init__(self, url: str, username: str, password: str):
-        """初始化 CalDAV 客户端
-        
-        注意：url 应该包含 scheme（https://）
         """
-        if not url.startswith('http://') and not url.startswith('https://'):
-            url = f'https://{url}'
+        初始化 CalDAV 客户端
+        注意，qq的dav.qq.com不要增加https://
+        """
         
         self.client = caldav.DAVClient(url, username=username, password=password)
         self.calendar = None

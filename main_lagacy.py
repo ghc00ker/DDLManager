@@ -110,7 +110,7 @@ def main():
 
     client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
     # 导入json文件
-    input_path = sys.argv[1] if len(sys.argv) > 1 else 'DDLManager\data\group_792340423_20260223_230254.json'
+    input_path = sys.argv[1] if len(sys.argv) > 1 else 'data\group_792340423_20260223_230254.json'
     try:
         with open(input_path, 'r', encoding='utf-8') as f:
             data = json.load(f)

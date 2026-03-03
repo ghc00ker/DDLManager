@@ -28,8 +28,13 @@ class AIClient:
         Returns:
             List[Dict]: AI 返回的 DDL 列表（原始格式）
         """
-        prompt_text = self._format_messages_for_prompt(messages[:max_messages])
-        
+        # 格式化聊天记录
+        prompt_text: str = ""
+        for message in messages:
+            prompt_text += message.format_message_for_prompt()
+        # print("--------------------------------------------------")
+        # print("prompt_text:")
+        # print(prompt_text)
         system_prompt = '''
 我是一个学生，而你是我的私人秘书，我需要你详细地把所有DeadLines和事件列出来，标明时间和内容
 以JSON格式返回，字段包括：起始时间的年，月，日，小时，分钟，结束时间的年，月，日，小时，分钟，标题，详细内容
@@ -69,14 +74,9 @@ class AIClient:
             response_format={'type': 'json_object'},
             stream=False,
         )
-        
+        # print("--------------------------------------------------")
+        # print("response: ")
         json_data = json.loads(resp.choices[0].message.content)
+        # for event in resp.choices[0]:
+        #     print(event)
         return json_data.get('ddl', [])
-    
-    def _format_messages_for_prompt(self, messages: List[Message]) -> str:
-        """格式化消息为 AI 可读的文本"""
-        lines = []
-        for msg in messages:
-            ts = msg.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            lines.append(f"[{ts}] {msg.sender_name}: {msg.text}")
-        return '\n'.join(lines)

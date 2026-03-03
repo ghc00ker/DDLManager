@@ -28,6 +28,9 @@ class Config:
     CALDAV_USER: Optional[str] = os.getenv('CALDAV_USER')
     CALDAV_PASS: Optional[str] = os.getenv('CALDAV_PASS')
     
+    # 文件地址
+    DATA_PATH: Optional[str] = os.getenv('DATA_PATH')
+    
     # 处理参数
     MAX_MESSAGES: int = int(os.getenv('MAX_MESSAGES', '5000'))
     

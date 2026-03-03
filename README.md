@@ -1,3 +1,11 @@
+该项目通过Caldav进行日程管理，通过本地的聊天记录和LLM进行分析
+
+使用方法：
+1. 根据requirements.txt安装依赖
+2. 将.env.example的.example去掉，即改名为.env文件
+3. 在.env文件中填入自己的信息
+4. 在data中
+
 ## 📅 iCalendar Event 常用字段一览表
 
 | 字段名 | 含义 | 是否必需 | 代码示例 |
@@ -73,7 +81,7 @@ event.add('rrule', {
 })
 ```
 
-该项目通过Caldav进行日程管理，通过本地的聊天记录和LLM进行分析
+
 
 
 分析
