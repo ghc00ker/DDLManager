@@ -12,7 +12,7 @@
 
 ## QQ聊天记录获取方法
 
-详见https://github.com/shuakami/qq-chat-exporter，选择json导出形式
+详见https://github.com/shuakami/qq-chat-exporter ，选择json导出形式
 
 ## 关于QQ邮箱的选择
 
