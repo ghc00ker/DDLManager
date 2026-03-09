@@ -1,9 +1,10 @@
 """DDL 提取器 - 核心业务逻辑"""
+from datetime import datetime
 from typing import List
 from ..models import Message, Event
 from .ai_client import AIClient
-
-
+from ..config import Config
+from .storage import StorageService
 class DDLExtractor:
     """DDL 提取器 - 协调消息解析、AI 分析、事件生成
     
@@ -16,12 +17,12 @@ class DDLExtractor:
     def __init__(self, ai_client: AIClient):
         self.ai_client = ai_client
     
-    def extract(self, messages: List[Message], max_messages: int = 5000) -> List[Event]:
+    def extract(self, messages: List[Message], watermark: datetime) -> List[Event]:
         """从消息中提取 DDL 事件
         
         Args:
             messages: 已解析的消息列表
-            max_messages: 最多处理的消息数量
+            groupname: 群聊名称
             
         Returns:
             List[Event]: 提取出的事件对象列表
@@ -32,7 +33,7 @@ class DDLExtractor:
         
         print(f"开始分析 {len(messages)} 条消息...")
         
-        ddl_items = self.ai_client.extract_deadlines(messages, max_messages)
+        ddl_items = self.ai_client.extract_deadlines(messages, watermark)
         
         events = []
         for item in ddl_items:

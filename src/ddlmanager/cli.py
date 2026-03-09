@@ -1,10 +1,13 @@
 """命令行入口 - 主流程编排"""
+from datetime import datetime
+import json
 import sys
 from pathlib import Path
 from .config import Config
 from .parsers import QQParser
 from .services import AIClient, CalendarService, DDLExtractor
 from .models import Event
+from .services.storage import StorageService
 from typing import List
 import threading
 import time
@@ -98,6 +101,12 @@ def main():
         print(f'错误：文件不存在 {input_path}')
         sys.exit(1)
     
+    # 获取群聊名称
+    groupname: str
+    with open(input_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        groupname = (data.get("chatInfo")).get("name")
+    
     # 3. 解析消息
     parser = QQParser()
     try:
@@ -114,7 +123,7 @@ def main():
     for message in messages:
         print(message.format_message_for_prompt() + "\n")
     
-    #第一处人工审查 
+    # 第一处人工审查 
     if not confirm(f"\n以上为 {len(messages)} 条消息，是否发送给 AI 分析？(y/n): "):
         print("已取消")
         sys.exit(0)
@@ -126,13 +135,21 @@ def main():
     )
     extractor = DDLExtractor(ai_client)
     
+    
+    # 加载storage
+    try:
+        storage = StorageService()
+        watermark = datetime.fromtimestamp(storage.get_watermark(groupname))
+    except Exception as e:
+        print("加载storage失败")
+        sys.exit(1)
+    # 开始分析
     try:
         with Spinner("LLM分析中"):
-            events = extractor.extract(messages, max_messages=Config.MAX_MESSAGES)
+            events = extractor.extract(messages, watermark)
     except Exception as e:
         print(f'AI 分析失败: {e}')
         sys.exit(1)
-    
     if not events:
         print('未提取到任何事件')
         sys.exit(0)
@@ -168,6 +185,8 @@ def main():
     success_count = calendar.save_events_batch(events)
     
     print(f"\n完成！成功保存 {success_count}/{len(events)} 个事件")
+    if messages:
+        storage.update_watermark(groupname, messages[-1].timestamp)
 
 
 if __name__ == '__main__':

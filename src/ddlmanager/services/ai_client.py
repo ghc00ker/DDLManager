@@ -1,10 +1,11 @@
 """AI 客户端 - 封装 DeepSeek/OpenAI API 调用"""
+from datetime import datetime
 import json
 from typing import List, Dict
 from openai import OpenAI
 from ..models import Message
-
-
+from .storage import StorageService
+from ..config import Config
 class AIClient:
     """DeepSeek AI 客户端
     
@@ -18,7 +19,7 @@ class AIClient:
         self.client = OpenAI(api_key=api_key, base_url=base_url)
         self.model = 'deepseek-chat'
     
-    def extract_deadlines(self, messages: List[Message], max_messages: int = 5000) -> List[Dict]:
+    def extract_deadlines(self, messages: List[Message], watermark: datetime) -> List[Dict]:
         """从消息列表中提取 DDL 和事件
         
         Args:
@@ -28,10 +29,22 @@ class AIClient:
         Returns:
             List[Dict]: AI 返回的 DDL 列表（原始格式）
         """
+        prompt_message = Message.get_messages_with_content(messages, watermark)
         # 格式化聊天记录
-        prompt_text: str = ""
-        for message in messages:
+        count = 0
+        prompt_text: str = "以下为上下文背景："
+        for message in prompt_message:
+            if (message.timestamp < watermark):
+                prompt_text += message.format_message_for_prompt()
+                prompt_text += "\n"
+                count += 1
+            else:
+                break
+        prompt_text += "\n 以下为待分析的内容：\n"
+        for message in prompt_message[count:]:
             prompt_text += message.format_message_for_prompt()
+            prompt_text += "\n"
+            count += 1
         # print("--------------------------------------------------")
         # print("prompt_text:")
         # print(prompt_text)
@@ -63,8 +76,9 @@ class AIClient:
 }
 '''
         
-        user_prompt = f'下面是聊天记录（最多前 {max_messages} 条）：\n\n{prompt_text}'
-        
+        user_prompt = f'下面是聊天记录（最多前 {Config.MAX_MESSAGES} 条）：\n\n{prompt_text}'
+        # test
+        print(user_prompt)
         resp = self.client.chat.completions.create(
             model=self.model,
             messages=[

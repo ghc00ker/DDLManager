@@ -33,6 +33,7 @@ class Config:
     
     # 处理参数
     MAX_MESSAGES: int = int(os.getenv('MAX_MESSAGES', '5000'))
+    CONTENT_NUM: int = int(os.getenv('CONTENT_NUM', '40'))
     
     @classmethod
     def validate(cls) -> bool:

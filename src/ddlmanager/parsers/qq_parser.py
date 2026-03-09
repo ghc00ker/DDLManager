@@ -74,8 +74,6 @@ class QQParser(MessageParser):
         sender_name = sender.get('name') or sender.get('uid') or ''
         sender_uid = sender.get('uid')
         content = raw_message.get('content') or {}
-        # text = str(content.get('text', ''))
-        # text字段在
         text = QQParser.extract_text_from_content(content)
         
         return Message(mid, sender_name, sender_uid, text, ts)

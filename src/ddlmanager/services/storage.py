@@ -31,23 +31,22 @@ class StorageService:
         states是所有group的状态
         '''
         self.state_path = Path(state_path)
-        self.states = self._load()
+        self.states = self._load().get("groups")
 
     def _load(self) -> dict:
-        '''
-        若ddlmanager.states.json存在则读取，否则报错
-        '''
-        try:
+        '''若状态文件存在则读取，否则新建空结构'''
+        if self.state_path.exists():
             with open(self.state_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
-        except:
-            print("历史记录文件ddlmanagerstates.json不存在")
-            sys.exit(1)
-            # ？新建
+        print(f"状态文件 {self.state_path} 不存在，已自动创建")
+        empty = {"groups": []}
+        with open(self.state_path, 'w', encoding='utf-8') as f:
+            json.dump(empty, f, ensure_ascii=False, indent=2)
+        return empty
 
     def _save(self):
         with open(self.state_path, 'w', encoding='utf-8') as f:
-            json.dump(self.states, f, ensure_ascii=False, indent=2)
+            json.dump({"groups": self.states}, f, ensure_ascii=False, indent=2)
             
     # 检索
     def get_group_index(self, groupname: str) -> int:
@@ -66,50 +65,26 @@ class StorageService:
                 "watermark": None,
                 "processed_events": []
             }
-            self.states[groupname].append(new_group)
+            self.states.append(new_group)
             return new_group
+        else:
+            return self.states[index]
     # 水位线
 
     def get_watermark(self, groupname: str) -> Optional[datetime]:
         """获取上次处理到的最后一条消息的时间戳"""
         group = self.get_group(groupname)
-        wm = self.states.get("watermark")
+        wm = group.get("watermark")
         if wm:
-            return datetime.fromisoformat(wm)
-        return None
+            return wm
+        return datetime.min
 
     def update_watermark(self, groupname: str, timestamp: datetime):
         """更新水位线并持久化"""
-        self.states["watermark"] = timestamp
+        for state in self.states:
+            if state.get("groupname") == groupname:
+                state["watermark"] = timestamp.timestamp()
+                break
         self._save()
 
     # 事件去重有爆大bug，summary可能不一样
-
-    def is_duplicate(self, event: Event) -> bool:
-        """检查是否已处理过相同的事件（按 summary + start_time 匹配）"""
-        key = {
-            "summary": event.summary,
-            "start_time": event.start_datetime.isoformat()
-        }
-        return key in self.states["processed_events"]
-
-    def record_event(self, event: Event):
-        """记录已处理的事件（用于后续去重）"""
-        key = {
-            "summary": event.summary,
-            "start_time": event.start_datetime.isoformat()
-        }
-        if key not in self.states["processed_events"]:
-            self.states["processed_events"].append(key)
-            self._save()
-
-    def record_events(self, events: List[Event]):
-        """批量记录"""
-        for event in events:
-            key = {
-                "summary": event.summary,
-                "start_time": event.start_datetime.isoformat()
-            }
-            if key not in self.states["processed_events"]:
-                self.states["processed_events"].append(key)
-        self._save()
