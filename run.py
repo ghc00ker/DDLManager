@@ -1,8 +1,7 @@
-"""入口脚本 - 运行模块化版本的 DDLManager
+"""入口脚本 - 运行 DDLManager 交互式菜单
 
 使用方式：
     python run.py
-    python run.py data/your_file.json
 """
 import sys
 from pathlib import Path

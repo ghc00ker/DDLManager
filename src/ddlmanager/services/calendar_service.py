@@ -42,24 +42,48 @@ class CalendarService:
             return False
     
     def list_events(self) -> List[Dict]:
-        """列出日历中的所有事件"""
+        """列出日历中的所有事件，返回包含完整信息的字典列表"""
         if not self.calendar:
             raise RuntimeError("请先调用 connect() 连接日历")
-        
+
         events_list = []
-        events = self.calendar.events()
-        
-        for event in events:
+        for event in self.calendar.events():
             ical_component = event.icalendar_instance
             for component in ical_component.walk():
                 if component.name == "VEVENT":
                     events_list.append({
                         'summary': str(component.get('summary', '')),
+                        'description': str(component.get('description', '')),
                         'start': component.get('dtstart').dt if component.get('dtstart') else None,
-                        'uid': str(component.get('uid', ''))
+                        'end': component.get('dtend').dt if component.get('dtend') else None,
+                        'uid': str(component.get('uid', '')),
+                        '_raw': event,
                     })
-        
+
         return events_list
+
+    def delete_event(self, uid: str) -> bool:
+        """按 UID 删除日历事件"""
+        if not self.calendar:
+            raise RuntimeError("请先调用 connect() 连接日历")
+
+        for event in self.calendar.events():
+            for component in event.icalendar_instance.walk():
+                if component.name == "VEVENT" and str(component.get('uid', '')) == uid:
+                    event.delete()
+                    return True
+        return False
+
+    def update_event(self, uid: str, updated: Event) -> bool:
+        """按 UID 更新日历事件：先删除旧的，再保存新的（保留 UID）"""
+        if not self.calendar:
+            raise RuntimeError("请先调用 connect() 连接日历")
+
+        if not self.delete_event(uid):
+            return False
+
+        updated.uid = uid
+        return self.save_event(updated)
     
     def save_event(self, event: Event) -> bool:
         """保存事件到日历

@@ -4,7 +4,6 @@ import json
 from typing import List, Dict
 from openai import OpenAI
 from ..models import Message
-from .storage import StorageService
 from ..config import Config
 class AIClient:
     """DeepSeek AI 客户端
@@ -76,9 +75,8 @@ class AIClient:
 }
 '''
         
-        user_prompt = f'下面是聊天记录（最多前 {Config.MAX_MESSAGES} 条）：\n\n{prompt_text}'
-        # test
-        print(user_prompt)
+        user_prompt = f'下面是聊天记录：\n\n{prompt_text}'
+
         resp = self.client.chat.completions.create(
             model=self.model,
             messages=[

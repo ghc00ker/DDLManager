@@ -76,15 +76,13 @@ class StorageService:
         group = self.get_group(groupname)
         wm = group.get("watermark")
         if wm:
-            return wm
+            return datetime.fromtimestamp(wm)
         return datetime.min
 
     def update_watermark(self, groupname: str, timestamp: datetime):
-        """更新水位线并持久化"""
-        for state in self.states:
-            if state.get("groupname") == groupname:
-                state["watermark"] = timestamp.timestamp()
-                break
+        """更新水位线并持久化（若群组不存在会自动创建）"""
+        group = self.get_group(groupname)
+        group["watermark"] = timestamp.timestamp()
         self._save()
 
     # 事件去重有爆大bug，summary可能不一样

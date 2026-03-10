@@ -16,29 +16,31 @@ class Message:
     
     def format_message_for_prompt(self) -> str:
         """格式化一条消息为 AI 可读的文本"""
-        line: str = ""
         try:
             ts = self.timestamp.strftime('%Y-%m-%d %H:%M:%S')
-            line = (f"[{ts}] {self.sender_name}: {self.text}")
-        except:
-            print("格式化消息为 AI 可读的文本时出错")
-            
-        return line
-    
+            return f"[{ts}] {self.sender_name}: {self.text}"
+        except Exception as e:
+            print(f"格式化消息时出错: {e}")
+            return ""
+
     @classmethod
     def get_messages_with_content(cls, messages: List['Message'], watermark: datetime) -> List['Message']:
-        ret_deq = deque(maxlen = Config.CONTENT_NUM)
-        ret: List[Message]
-        newest_index: int
+        """取 watermark 之前最近 CONTENT_NUM 条作为上下文，加上 watermark 之后的所有新消息"""
+        context_deq = deque(maxlen=Config.CONTENT_NUM)
+        new_start = len(messages)
+
         for i, message in enumerate(messages):
             if message.timestamp <= watermark:
-                ret_deq.append(message)
+                context_deq.append(message)
             else:
-                ret = list(ret_deq)
-                print(f"共获取了{len(ret)}条content message")
-                newest_index = i
+                new_start = i
                 break
-        for message in messages[newest_index:]:
-            ret.append(message)
-        return ret
+
+        context = list(context_deq)
+        print(f"共获取了{len(context)}条上下文消息")
+
+        if new_start >= len(messages):
+            return context
+
+        return context + messages[new_start:]
         
